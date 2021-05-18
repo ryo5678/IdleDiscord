@@ -56,10 +56,10 @@ async def idle(ctx):
 	if exe(sql) == None:
 		sql = "INSERT INTO userstats (user_id) VALUES ('{0.author}')".format(ctx)
 		com(sql)
-		await ctx.send('Your adventure begins!')
+		await ctx.send('Your adventure begins!\n')
 		await ctx.message.delete()
 	else:
-		await ctx.send('{0.author} already started their adventure.'.format(ctx))
+		await ctx.send('{0.author} already started their adventure.\n'.format(ctx))
 		await ctx.message.delete()
 		
 #-------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ async def duel(ctx, user: discord.Member = None):
 	# Assign the damage outcome
 		dmg = random.randint(1,10) + atk - dfen
 		if dmg < 0:
-			await ctx.send("{0.mention}'s defense is too much for you! Get stronger before challenging them again.".format(user))
+			await ctx.send("{0.mention}'s defense is too much for you!\n Get stronger before challenging them again.\n".format(user))
 		else:
 		# Update defenders health value
 			sql = "UPDATE userstats SET health = health - {0} WHERE user_id='{1}'".format(dmg,user)
@@ -98,19 +98,19 @@ async def duel(ctx, user: discord.Member = None):
 				# Give gold to attacker
 				sql = "UPDATE userstats SET gold = gold + {0} WHERE user_id='{1.author}'".format(gold,ctx)
 				com(sql)
-				await ctx.send('You defeated {0.mention}! You gain {1} gold.'.format(user,gold))
+				await ctx.send('You defeated {0.mention}! You gain {1} gold.\n'.format(user,gold))
 				await ctx.message.delete()
 			else:
 			# Post battle result
-				await ctx.send('{0.author} slapped {1.mention} for {2} damage! They have {3} health remaining.'.format(ctx,user,dmg,hp))
+				await ctx.send('{0.author} slapped {1.mention} for {2} damage!\n They have {3} health remaining.\n'.format(ctx,user,dmg,hp))
 				await ctx.message.delete()
 	else:
-		await ctx.send('Please tag a valid user')
+		await ctx.send('Please tag a valid user.\n')
 		await ctx.message.delete()
 @duel.error
 async def duel_error(ctx, error):
 	if isinstance(error, discord.ext.commands.BadArgument):
-		await ctx.send('Could not recognize username')
+		await ctx.send('Could not recognize username.\n')
 
 #-------------------------------------------------------------------------------
 # ------------------------------ GOLD COMMAND ----------------------------------
@@ -122,7 +122,8 @@ async def gold(ctx):
 	sql = "SELECT gold FROM userstats WHERE user_id='{0.author}'".format(ctx)
 	for x in exe(sql):
 		gold = x
-	await ctx.send('You have {0} gold in your pockets.'.format(gold))
+	await ctx.send('You have {0} gold in your pockets.\n'.format(gold))
+	await ctx.message.delete()
 	
 #-------------------------------------------------------------------------------
 # ------------------------------ EXP COMMAND ----------------------------------
@@ -138,7 +139,7 @@ async def exp(ctx):
 	for x in exe(sql):
 		lexp = x
 	lexp = lexp - cexp
-	await ctx.send("{0.author} currently has {1} exp.'\n' Remaining exp to level up: {2}.".format(ctx,cexp,lexp))
+	await ctx.send("{0.author} currently has {1} exp.\n Remaining exp to level up: {2}\n.".format(ctx,cexp,lexp))
 
 #-------------------------------------------------------------------------------
 # ------------------------------ FIGHT COMMAND ---------------------------------
@@ -172,7 +173,7 @@ async def fight(ctx):
 		# Assign damage to level
 		dmg = random.randint(1,10) + atk - ldfen
 		if dmg <= 0:
-			await ctx.send("Level {0}'s defense is too much for you! Get stronger before challenging it again.".format(lvl))
+			await ctx.send("Level {0}'s defense is too much for you!\n Get stronger before challenging it again.\n".format(lvl))
 		else:
 			# Grab player's health
 			sql = "SELECT health FROM userstats WHERE user_id='{0.author}'".format(ctx)
@@ -182,7 +183,7 @@ async def fight(ctx):
 				# Update player's health value
 				sql = "UPDATE userstats SET health = 0 WHERE user_id='{0.author}'".format(ctx)
 				com(sql)
-				await ctx.send("You received {0} damage. {1.author} has died!".format(ldmg,ctx))
+				await ctx.send("You received {0} damage. {1.author} has died!\n".format(ldmg,ctx))
 			else:
 				# Update player's health value
 				sql = "UPDATE userstats SET health = health - {0} WHERE user_id='{1.author}'".format(ldmg,ctx)
@@ -222,7 +223,7 @@ async def fight(ctx):
 					for x in exe(sql):
 						mexp = x
 					# Post battle results
-					await ctx.send('{0.author} received {1} damage and dealt {2} damage. {3.author} has defeated level {4}! They gain {5} gold.'.format(ctx,ldmg,dmg,ctx,lvl,gold))
+					await ctx.send('{0.author} received {1} damage and dealt {2} damage.\n {3.author} has defeated level {4}! They gain {5} gold.\n'.format(ctx,ldmg,dmg,ctx,lvl,gold))
 					await ctx.message.delete()
 					# Set the player's next opponent
 					lvl = lvl + 1
@@ -259,21 +260,21 @@ async def fight(ctx):
 						plvl = plvl + 1
 						sql = "UPDATE userstats SET playerlvl = {0} WHERE user_id='{1.author}'".format(plvl,ctx)
 						com(sql)
-						await ctx.send("Level up! {0.author} is now level {1}. Stat point(s) gained: {2}".format(ctx,plvl,stat))
+						await ctx.send("Level up! {0.author} is now level {1}.\n Stat point(s) gained: {2}\n".format(ctx,plvl,stat))
 					else:
 						# Give exp to player
 						sql = "UPDATE userstats SET currentexp = currentexp + {0} WHERE user_id='{1.author}'".format(rexp,ctx)
 						com(sql)
 						# Get exp remaining to levelup
 						lexp = mexp - (cexp + rexp)
-						await ctx.send("{0.author} received {1} exp. Exp remaining to level up: {2}".format(ctx,rexp,lexp))
+						await ctx.send("{0.author} received {1} exp.\n Exp remaining to level up: {2}\n".format(ctx,rexp,lexp))
 				else:
 					# Grab player's health
 					sql = "SELECT health FROM userstats WHERE user_id='{0.author}'".format(ctx)
 					for x in exe(sql):
 						php = x
 					# Post damage result when not defeating level
-					await ctx.send('{0.author} traded blows with level {1} for {2} damage! Level {1} has {3} health remaining. {0.author} received {4} damage and has {5} health remaining.'.format(ctx,lvl,dmg,lhp,ldmg,php))
+					await ctx.send('{0.author} traded blows with level {1} for {2} damage!\n Level {1} has {3} health remaining.\n {0.author} received {4} damage and has {5} health remaining.\n'.format(ctx,lvl,dmg,lhp,ldmg,php))
 					await ctx.message.delete()
 	
 #-------------------------------------------------------------------------------
@@ -304,15 +305,15 @@ async def heal(ctx):
 			heal = mhp
 			sql = "UPDATE userstats SET health = {0} WHERE user_id='{1.author}'".format(heal,ctx)
 			com(sql)
-			await ctx.send("Your health is now full at {0}.".format(heal))
+			await ctx.send('Your health is now full at {0}.\n'.format(heal))
 		else:
 			# Heal player for regen amount
 			sql = "UPDATE userstats SET health = {0} WHERE user_id='{1.author}'".format(heal,ctx)
 			com(sql)
-			await ctx.send("You healed for {0}. Your health is now at {1}.".format(rhp,heal))
+			await ctx.send('You healed for {0}. Your health is now at {1}.\n'.format(rhp,heal))
 	# Health is already full statement		
 	else:
-		await ctx.send("Your health is already full. Go take some damage first.")
+		await ctx.send('Your health is already full. Go take some damage first.\n')
 			
 	
 #-------------------------------------------------------------------------------
