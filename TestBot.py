@@ -13,6 +13,8 @@ idleDB = mysql.connector.connect(
   database="IdleDiscord"
 )
 
+owner_id = 138752093308583936
+
 mc = idleDB.cursor(buffered=True)
 
 intents = discord.Intents.default()
@@ -458,7 +460,7 @@ async def heal_error(ctx, error):
 					
 # Shutdown the bot!
 @bot.command()
-@commands.has_permissions(administrator=True)
+@commands.is_owner()
 async def shutdown(ctx):
 	await ctx.send('Bot is shutting down')
 	await bot.change_presence(status=discord.Status.invisible)
