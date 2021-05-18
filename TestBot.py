@@ -6,10 +6,11 @@ import mysql.connector
 import math
 
 idleDB = mysql.connector.connect(
-  host="localhost",
+  host="idlediscordbot.c5ezahjgi1hi.us-east-2.rds.amazonaws.com",
+  port="3306",
   user="discordbot",
   password="t8jks0/63tn",
-  database="idleplayerstats"
+  database="IdleDiscord"
 )
 
 mc = idleDB.cursor(buffered=True)
