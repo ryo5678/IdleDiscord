@@ -4,6 +4,7 @@ from discord.ext.commands import bot
 import random
 import mysql.connector
 import math
+import asyncio
 
 idleDB = mysql.connector.connect(
   host="idlediscordbot.c5ezahjgi1hi.us-east-2.rds.amazonaws.com",
@@ -20,8 +21,8 @@ mc = idleDB.cursor(buffered=True)
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", activity=discord.Game(name="Work In Progress"), status=discord.Status.online)
-
+bot = commands.Bot(command_prefix="!", activity=discord.Game(name="Work In Progress"), status=discord.Status.online)	
+		
 # Method for cooldown timer code
 def cooldown(ctx,timer):
 	# Grab time when command was LAST used
@@ -119,9 +120,6 @@ def assign_stat(ctx,sstat):
 				else:
 					return ("Please try again and select a correct stat point.\n")
 
-# Method for locking multi page bot messages to command caller
-def lock(reaction, user):
-        return user == ctx.author and str(reaction.emoji) in ["⬅️", "➡"]
     
 #-------------------------------------------------------------------------------
 # ------------------------------ ON READY EVENT ----------------------------------
@@ -543,28 +541,50 @@ async def shop(ctx):
 		# Set new time for cooldown
 		resetcooldown(ctx,a)
 		# Initialize shop pages
-		contents = ["Test","Test2","Test3"]
-		page_count = len(contents)
+		page_count = 0
 		cpage = 1
-		message = await ctx.send("Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+		page_turn = "\nPage {0}/{1}".format(cpage,page_count)
+		
+		shop = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
+		shop.add_field(name="Wood Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
+		shop.add_field(name="Wood Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
+		shop.add_field(name="\u200b",value=page_turn, inline=False)
+		
+		shop2 = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
+		shop2.add_field(name="Stone Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
+		shop2.add_field(name="Stone Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
+		shop2.add_field(name="\u200b",value="page_turn", inline=False)
+		
+		shop3 = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
+		shop3.add_field(name="Bronze Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
+		shop3.add_field(name="Bronze Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
+		shop3.add_field(name="\u200b",value="page_turn", inline=False)
+		
+		contents = [shop,shop2,shop3]
+		page_count = len(contents)
+	
+		message = await ctx.send(embed=contents[cpage-1])
 		# Add reactions for changing pages
-		await message.add_reaction("⬅️")
-		await message.add_reaction("➡")
+		await message.add_reaction("\u2B05")
+		await message.add_reaction("\u27A1")
+		# Method for locking multi page bot messages to command caller
+		def check(reaction,user):
+			return user == ctx.author and str(reaction.emoji) in ["\u2B05", "\u27A1"]
 		# Loop to keep shop open
 		while True:
 			try:
 				# Timer and lock for shop
-				reaction, user = await bot.wait_for("reaction_add", timeout=30, check=lock)
+				reaction, user = await bot.wait_for("reaction_add", timeout=30, check=check)
 				# Check for next page
-				if str(reaction.emoji) == "➡️" and cpage != page_count:
+				if str(reaction.emoji) == "\u27A1" and cpage != page_count:
 					cpage += 1
-					await message.edit(conent="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+					await message.edit(embed=contents[cpage-1])
 					await message.remove_reaction(reaction, user)
 				else:
 					# Check for previous page
-					if str(reaction.emoji) == "⬅️" and cpage > 1:
+					if str(reaction.emoji) == "\u2B05" and cpage > 1:
 						cpage -= 1
-						await message.edit(content="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+						await message.edit(embed=contents[cpage-1])
 						await message.remove_reaction(reaction, user)
 					else:
 						# Prevent going past page limits
