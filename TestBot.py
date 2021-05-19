@@ -13,6 +13,8 @@ idleDB = mysql.connector.connect(
   database="IdleDiscord"
 )
 
+owner_id = 138752093308583936
+
 mc = idleDB.cursor(buffered=True)
 
 intents = discord.Intents.default()
@@ -91,6 +93,39 @@ def is_player(ctx):
 	sql = "SELECT * FROM userstats WHERE user_id='{0.author}'".format(ctx)
 	if exe(sql) == None:
 		return ("{0.author} please type !idle before using this command.".format(ctx))
+		
+# Method to assign a stat point
+def assign_stat(ctx,sstat):
+	sstat = sstat.lower()
+	if sstat == "attack":
+		sql = "UPDATE userstats SET damage = damage + 1 WHERE user_id='{0.author}'".format(ctx)
+		com(sql)
+		return ("You have increased your attack by 1 point.\n")
+	else:
+		if sstat == "defense":
+			sql = "UPDATE userstats SET defense = defense + 1 WHERE user_id='{0.author}'".format(ctx)
+			com(sql)
+			return ("You have increased your defense by 1 point.\n")
+		else:
+			if sstat == "health":
+				sql = "UPDATE userstats SET maxhp = maxhp + 5 WHERE user_id='{0.author}'".format(ctx)
+				com(sql)
+				return ("You have increased your maximum health by 5 points.\n")
+			else:
+				if sstat == "regeneration":
+					sql = "UPDATE userstats SET regenhp = regenhp + 1 WHERE user_id='{0.author}'".format(ctx)
+					com(sql)
+					return ("You have increased your regeneration by 1 point.\n")
+				else:
+					return ("Please try again and select a correct stat point.\n")
+
+# Method for locking shop to command caller
+def lock(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in ["⬅️", "➡"]
+    
+#-------------------------------------------------------------------------------
+# ------------------------------ ON READY EVENT ----------------------------------
+#-------------------------------------------------------------------------------		
 
 @bot.event
 async def on_ready():
@@ -451,16 +486,109 @@ async def heal_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
 		await ctx.send(is_player(ctx))	
 		await ctx.message.delete()
-	
+
+#-------------------------------------------------------------------------------
+# ------------------------------ SPEND TRAIT POINTS COMMAND ----------------------------------
+#-------------------------------------------------------------------------------
+
+# Spend trait points
+@bot.command(pass_context = True)
+async def stp(ctx, choice):
+	# Check if player has a free stat to spend
+	sql = "SELECT freestats FROM userstats WHERE user_id='{0.author}'".format(ctx)
+	for x in exe(sql):
+		cstat = x
+	if cstat == 0:
+		await ctx.send("Sorry {0.author}, you do not have any free stat points to spend.".format(ctx))
+	else:
+		# Check if first time using command
+		a = "stp"
+		# Check for cooldown
+		dtime = cooldown(ctx,a)
+		if dtime <= 1800:
+			dtime = 1800 - dtime
+			await ctx.send(cooldown_response(dtime))
+			await ctx.message.delete()
+		else:
+			# Set new time for cooldown
+			resetcooldown(ctx,a)
+			sstat = choice
+			await ctx.send(assign_stat(ctx,sstat))
+@stp.error
+async def stp_error(ctx, error):
+	if isinstance(error, discord.ext.commands.CommandInvokeError):
+		await ctx.send(is_player(ctx))
+		await ctx.message.delete()	
+	else:
+		if isinstance(error, discord.ext.commands.MissingRequiredArgument):
+			await ctx.send("Please specifiy a valid stat after !stp and try again.\nAttack, Defense, Health, Regeneration")
+			await ctx.message.delete()
+
+#-------------------------------------------------------------------------------
+# ----------------------------- UPGRADE SHOP COMMAND -------------------------------
+#-------------------------------------------------------------------------------
+
+# Purchase upgrades
+@bot.command()
+async def shop(ctx):
+	# Check if first time using command
+	a = "shop"
+	# Check for cooldown
+	dtime = cooldown(ctx,a)
+	if dtime <= 180:
+		dtime = 180 - dtime
+		await ctx.send(cooldown_response(dtime))
+		await ctx.message.delete()
+	else:
+		# Set new time for cooldown
+		resetcooldown(ctx,a)
+		# Initialize shop pages
+		contents = ["Test","Test2","Test3"]
+		page_count = contents.len()
+		cpage = 1
+		message = await ctx.send("Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+		# Add reactions for changing pages
+		await message.add_reaction("⬅️")
+		await message.add_reaction("➡")
+		# Loop to keep shop open
+		while True:
+			try:
+				# Timer and lock for shop
+				reaction, user = await bot.wait_for("reaction_add", timeout=30, check=lock)
+				# Check for next page
+				if str(reaction.emoji) == "➡️" and cpage != page_count:
+					cpage += 1
+					await message.edit(conent="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+					await message.remove_reaction(reaction, user)
+				else:
+					# Check for previous page
+					if str(reaction.emoji) == "⬅️" and cpage > 1:
+					cpage -= 1
+					await message.edit(content="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+					await message.remove_reaction(reaction, user)
+					else:
+						# Prevent going past page limits
+						await message.remove_reaction(reaction, user)
+			# Conclude timer if player ignores or is done with shop
+			except asyncio.TimeoutError:
+				await message.delete()
+				break
+
+@shop.error
+async def shop_error(ctx, error):
+	if isinstance(error, discord.ext.commands.CommandInvokeError):
+		await ctx.send(is_player(ctx))	
+		await ctx.message.delete()
+		
 #-------------------------------------------------------------------------------
 # ----------------------------- SHUTDOWN COMMAND -------------------------------
 #-------------------------------------------------------------------------------
-					
+				
 # Shutdown the bot!
 @bot.command()
-@commands.has_permissions(administrator=True)
+@commands.is_owner()
 async def shutdown(ctx):
-	await ctx.send('Bot is shutting down')
+	await ctx.send('Idle Discord is restarting. Sorry for the inconvenience.')
 	await bot.change_presence(status=discord.Status.invisible)
 	await bot.close()
 	
