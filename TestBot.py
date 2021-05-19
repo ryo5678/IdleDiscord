@@ -119,7 +119,7 @@ def assign_stat(ctx,sstat):
 				else:
 					return ("Please try again and select a correct stat point.\n")
 
-# Method for locking shop to command caller
+# Method for locking multi page bot messages to command caller
 def lock(reaction, user):
         return user == ctx.author and str(reaction.emoji) in ["⬅️", "➡"]
     
@@ -544,7 +544,7 @@ async def shop(ctx):
 		resetcooldown(ctx,a)
 		# Initialize shop pages
 		contents = ["Test","Test2","Test3"]
-		page_count = contents.len()
+		page_count = len(contents)
 		cpage = 1
 		message = await ctx.send("Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
 		# Add reactions for changing pages
@@ -563,9 +563,9 @@ async def shop(ctx):
 				else:
 					# Check for previous page
 					if str(reaction.emoji) == "⬅️" and cpage > 1:
-					cpage -= 1
-					await message.edit(content="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
-					await message.remove_reaction(reaction, user)
+						cpage -= 1
+						await message.edit(content="Page {0}/{1}:\n{contents[{0}-1]}".format(cpage,page_count))
+						await message.remove_reaction(reaction, user)
 					else:
 						# Prevent going past page limits
 						await message.remove_reaction(reaction, user)
@@ -573,7 +573,6 @@ async def shop(ctx):
 			except asyncio.TimeoutError:
 				await message.delete()
 				break
-
 @shop.error
 async def shop_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
