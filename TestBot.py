@@ -120,9 +120,41 @@ def assign_stat(ctx,sstat):
 				else:
 					return ("Please try again and select a correct stat point.\n")
 
+# Method to fetch item_list for !shop
+def get_items(ctx):
+	# Current master list of items
+	item_list = ["Wood Shield","Wood Sword","Wood Armor","Wood Ring","Stone Shield","Stone Sword","Stone Armor","Stone Ring",
+	"Bronze Shield","Bronze Sword","Bronze Armor","Bronze Ring"]
+	# Check if items are purchased
+	sql = "SELECT * FROM purchased_items WHERE user_id='{0.author}'".format(ctx)
+	items = exe(sql)
+	# Grab all item prices
+	sql = "SELECT * FROM shop_prices"
+	prices = exe(sql)
+	# Grab all item benefits
+	sql = "SELECT * FROM shop_benefits"
+	ben = exe(sql)
+	# Loop to set values
+	i = 1
+	max = len(items)
+	value_list = [""] * max
+	while i <= max - 1:
+		x = i-1
+		value_list[x] = "Costs " + str(prices[x]) + " gold. Grants +" + ben[x] + "."
+		i += 1
+	# Loop through purchase history
+	i = 1
+	while i <= max - 1:
+		x = i-1
+		if items[i] == 1:
+			item_list[x] = "~~" + item_list[i-1] + "~~"
+			value_list[x] = "You have already purchased this item."
+		i += 1
+	return item_list, value_list
+	
     
 #-------------------------------------------------------------------------------
-# ------------------------------ ON READY EVENT ----------------------------------
+#------------------------------ ON READY EVENT ---------------------------------
 #-------------------------------------------------------------------------------		
 
 @bot.event
@@ -130,7 +162,7 @@ async def on_ready():
 	print('We have logged in as {0.user}'.format(bot))
 	
 #-------------------------------------------------------------------------------
-# ------------------------------ IDLE COMMAND ----------------------------------
+#------------------------------- IDLE COMMAND ----------------------------------
 #-------------------------------------------------------------------------------
 	
 # Start Adventure! Creates a new user row in SQL
@@ -144,14 +176,16 @@ async def idle(ctx):
 			com(sql)
 			sql = "INSERT INTO timers (user_id) VALUES ('{0.author}')".format(ctx)
 			com(sql)
-			await ctx.send('Your adventure begins!\n')
+			sql = "INSERT INTO purchased_items (user_id) VALUES ('{0.author}')".format(ctx)
+			com(sql)
+			await ctx.send("{0.author.name}'s adventure begins!\n".format(ctx))
 			await ctx.message.delete()
 		else:
 			await ctx.send('{0.author} already started their adventure.\n'.format(ctx))
 			await ctx.message.delete()
 		
 #-------------------------------------------------------------------------------
-# ------------------------------ DUEL COMMAND ----------------------------------
+#------------------------------- DUEL COMMAND ----------------------------------
 #-------------------------------------------------------------------------------
 
 # Duel! User duels another user!	
@@ -216,7 +250,7 @@ async def duel_error(ctx, error):
 		await ctx.message.delete()
 
 #-------------------------------------------------------------------------------
-# ------------------------------ GOLD COMMAND ----------------------------------
+#------------------------------- GOLD COMMAND ----------------------------------
 #-------------------------------------------------------------------------------
 		
 # Check gold value
@@ -245,7 +279,7 @@ async def gold_error(ctx, error):
 		await ctx.message.delete()
 	
 #-------------------------------------------------------------------------------
-# ------------------------------ EXP COMMAND ----------------------------------
+#------------------------------- EXP COMMAND -----------------------------------
 #-------------------------------------------------------------------------------
 		
 # Check exp value
@@ -272,14 +306,16 @@ async def exp(ctx):
 			lexp = x
 		# Post exp info to player
 		lexp = lexp - cexp
-		await ctx.send("{0.author} currently has {1} exp.\n Remaining exp to level up: {2}.\n".format(ctx,cexp,lexp))
+		await ctx.send("{0.author.name} currently has {1} exp.\n Remaining exp to level up: {2}.\n".format(ctx,cexp,lexp))
+		await ctx.message.delete()
 @exp.error
 async def exp_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
 		await ctx.send(is_player(ctx))
 		await ctx.message.delete()
+		
 #-------------------------------------------------------------------------------
-# ------------------------------ FIGHT COMMAND ---------------------------------
+#------------------------------- FIGHT COMMAND ---------------------------------
 #-------------------------------------------------------------------------------
 	
 # Fight! Begin the next level battle!	
@@ -428,8 +464,9 @@ async def fight_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
 		await ctx.send(is_player(ctx))	
 		await ctx.message.delete()
+		
 #-------------------------------------------------------------------------------
-# ------------------------------ HEAL COMMAND ----------------------------------
+#------------------------------- HEAL COMMAND ----------------------------------
 #-------------------------------------------------------------------------------
 
 # Heal the player
@@ -486,7 +523,7 @@ async def heal_error(ctx, error):
 		await ctx.message.delete()
 
 #-------------------------------------------------------------------------------
-# ------------------------------ SPEND TRAIT POINTS COMMAND ----------------------------------
+#--------------------------- SPEND TRAIT POINTS COMMAND ------------------------
 #-------------------------------------------------------------------------------
 
 # Spend trait points
@@ -512,6 +549,7 @@ async def stp(ctx, choice):
 			resetcooldown(ctx,a)
 			sstat = choice
 			await ctx.send(assign_stat(ctx,sstat))
+			await ctx.message.delete()
 @stp.error
 async def stp_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
@@ -523,7 +561,7 @@ async def stp_error(ctx, error):
 			await ctx.message.delete()
 
 #-------------------------------------------------------------------------------
-# ----------------------------- UPGRADE SHOP COMMAND -------------------------------
+#----------------------------- UPGRADE SHOP COMMAND ----------------------------
 #-------------------------------------------------------------------------------
 
 # Purchase upgrades
@@ -540,25 +578,34 @@ async def shop(ctx):
 	else:
 		# Set new time for cooldown
 		resetcooldown(ctx,a)
+		# Clear command from chat
+		await ctx.message.delete()
 		# Initialize shop pages
 		page_count = 0
 		cpage = 1
-		page_turn = "\nPage {0}/{1}".format(cpage,page_count)
+	
+		item_list, value_list = get_items(ctx)
 		
 		shop = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
-		shop.add_field(name="Wood Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
-		shop.add_field(name="Wood Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
-		shop.add_field(name="\u200b",value=page_turn, inline=False)
+		shop.add_field(name=item_list[0], value=value_list[0], inline=False)
+		shop.add_field(name=item_list[1], value=value_list[1], inline=False)
+		shop.add_field(name=item_list[2], value=value_list[2], inline=False)
+		shop.add_field(name=item_list[3], value=value_list[3], inline=False)
+		shop.add_field(name="\u200b",value='\nPage 1/3', inline=False)
 		
 		shop2 = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
-		shop2.add_field(name="Stone Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
-		shop2.add_field(name="Stone Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
-		shop2.add_field(name="\u200b",value="page_turn", inline=False)
+		shop2.add_field(name=item_list[4], value=value_list[4], inline=False)
+		shop2.add_field(name=item_list[5], value=value_list[5], inline=False)
+		shop2.add_field(name=item_list[6], value=value_list[6], inline=False)
+		shop2.add_field(name=item_list[7], value=value_list[7], inline=False)
+		shop2.add_field(name="\u200b",value='\nPage {0}/{1}'.format(cpage,page_count), inline=False)
 		
 		shop3 = discord.Embed(title="Items Shop", description="Purchase your upgrades here!", color=0xa81207)
-		shop3.add_field(name="Bronze Shield", value="Costs 5 gold. Grants +1 defense.", inline=False)
-		shop3.add_field(name="Bronze Sword", value="Costs 5 gold. Grants +1 attack.", inline=False)
-		shop3.add_field(name="\u200b",value="page_turn", inline=False)
+		shop3.add_field(name=item_list[8], value=value_list[8], inline=False)
+		shop3.add_field(name=item_list[9], value=value_list[9], inline=False)
+		shop3.add_field(name=item_list[10], value=value_list[10], inline=False)
+		shop3.add_field(name=item_list[11], value=value_list[11], inline=False)
+		shop3.add_field(name="\u200b",value='\nPage {0}/{1}'.format(cpage,page_count), inline=False)
 		
 		contents = [shop,shop2,shop3]
 		page_count = len(contents)
@@ -578,12 +625,14 @@ async def shop(ctx):
 				# Check for next page
 				if str(reaction.emoji) == "\u27A1" and cpage != page_count:
 					cpage += 1
+					contents[cpage-1].set_field_at(4,name="\u200b",value='\nPage {0}/{1}'.format(cpage,page_count), inline=False)
 					await message.edit(embed=contents[cpage-1])
 					await message.remove_reaction(reaction, user)
 				else:
 					# Check for previous page
 					if str(reaction.emoji) == "\u2B05" and cpage > 1:
 						cpage -= 1
+						contents[cpage-1].set_field_at(4,name="\u200b",value='\nPage {0}/{1}'.format(cpage,page_count), inline=False)
 						await message.edit(embed=contents[cpage-1])
 						await message.remove_reaction(reaction, user)
 					else:
@@ -598,17 +647,116 @@ async def shop_error(ctx, error):
 	if isinstance(error, discord.ext.commands.CommandInvokeError):
 		await ctx.send(is_player(ctx))	
 		await ctx.message.delete()
+
+#-------------------------------------------------------------------------------
+#------------------------------ BUY COMMAND ------------------------------------
+#-------------------------------------------------------------------------------
+				
+# Purchase items from the shop!
+@bot.command(pass_context = True)
+async def buy(ctx, item1, item2):
+	# Check if first time using command
+	a = "buy"
+	# Check for cooldown
+	dtime = cooldown(ctx,a)
+	if dtime <= 10:
+		dtime = 10 - dtime
+		await ctx.send(cooldown_response(dtime))
+		await ctx.message.delete()
+	else:
+		# Set new time for cooldown
+		resetcooldown(ctx,a)
+		# Set item name
+		item = item1.lower() + "_" + item2.lower()
+		# Get requested item price
+		sql = "SELECT {0} FROM shop_prices".format(item)
+		for x in exe(sql):
+			price = x
+		# Get requested item benefit
+		sql = "SELECT {0} FROM shop_benefits".format(item)
+		for x in exe(sql):
+			ben = x
+		# Split benefit into stat value and type
+		benefits = ben.split(' ',1)
+		if benefits[1] == "max hp":
+			benefits[1] = "maxhp"
+		elif benefits[1] == "hp regen":
+			benefits[1] = "regenhp"
+		elif benefits[1] == "attack":
+			benefits[1] = "damage"
+		# Check if player has enough gold
+		sql = "SELECT gold FROM userstats WHERE user_id='{0.author}'".format(ctx)
+		for x in exe(sql):
+			gold = x
+		if gold - int(benefits[0]) < 0:
+			await ctx.send("You do not have enough gold to purchase a {0} {1}.".format(item1,item2))
+			await ctx.message.delete()
+		else:
+			# Update new gold value on purchase
+			sql = "UPDATE userstats SET gold = gold - {0} WHERE user_id='{1.author}'".format(price,ctx)
+			com(sql)
+			# Update stat value
+			stat = int(benefits[0])
+			sql = "UPDATE userstats SET {0} = {0} + {1} WHERE user_id='{2.author}'".format(benefits[1],stat,ctx)
+			com(sql)
+			# Set purchase history
+			sql = "UPDATE purchased_items SET {0} = 1 WHERE user_id='{1.author}'".format(item,ctx)
+			com(sql)
+			# Inform user
+			benefits = ben.split(' ',1)
+			await ctx.send("You have purchased {0} {1} and increased {2} by {3} points.\nGold remaining: {4}".format(item1,item2,benefits[1],stat,price))			
+@buy.error
+async def buy_error(ctx, error):
+	if isinstance(error, discord.ext.commands.CommandInvokeError):
+		# Check if user already exists
+		sql = "SELECT * FROM userstats WHERE user_id='{0.author}'".format(ctx)
+		if exe(sql) == None:
+			await ctx.send("{0.author} please type !idle before using this command.".format(ctx))
+			await ctx.message.delete()	
+		else:
+			# Invalid input message
+			await ctx.send("Invalid item. Please make sure you use the command as follows:\n!buy Wood Shield or !buy wood shield")	
+			await ctx.message.delete()		
+	if isinstance(error, discord.ext.commands.MissingRequiredArgument):
+		await ctx.send("Invalid usage. Please make sure you use the command as follows:\n!buy Wood Shield or !buy wood shield")	
+		await ctx.message.delete()
+		
+		
 		
 #-------------------------------------------------------------------------------
-# ----------------------------- SHUTDOWN COMMAND -------------------------------
+#------------------------------ POST UPDATES COMMAND ---------------------------
+#-------------------------------------------------------------------------------
+				
+# Future updates for bot!
+@bot.command()
+async def updates(ctx):
+	# Check if first time using command
+	a = "updates"
+	# Check for cooldown
+	dtime = cooldown(ctx,a)
+	if dtime <= 3600:
+		dtime = 3600 - dtime
+		await ctx.send(cooldown_response(dtime))
+		await ctx.message.delete()
+	else:
+		# Set new time for cooldown
+		resetcooldown(ctx,a)
+		with open('UpdateProgressReport.txt') as f:
+			text = f.read()
+		await ctx.send(text)
+		await ctx.message.delete()
+	
+#-------------------------------------------------------------------------------
+#------------------------------ SHUTDOWN COMMAND -------------------------------
 #-------------------------------------------------------------------------------
 				
 # Shutdown the bot!
 @bot.command()
 @commands.is_owner()
 async def shutdown(ctx):
+	await ctx.message.delete()
 	await ctx.send('Idle Discord is restarting. Sorry for the inconvenience.')
 	await bot.change_presence(status=discord.Status.invisible)
 	await bot.close()
-	
+
 bot.run('NjIxNTIyNTYwMzkxMDUzMzEy.XXmj_Q.IZjheAfUaPAOY-_qLZ6fTow-5cg')
