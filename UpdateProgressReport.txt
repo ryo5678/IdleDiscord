@@ -1,0 +1,47 @@
+Idle Discord Updates:
+
+~~-------------------------
+Complete by May 21st
+-------------------------
+Modify shop view to only show non-purchased items
+	- Create database of purchase history (Complete)
+	- Create arrays to support all shop items (Complete)
+	- Modify shop to use the arrays to show items (Complete)
+	- Modify arrays to grab data from database (Complete)
+	- Modify shop view to display purchase history (Complete)
+	- Modify shop item descriptions to grab from database (Complete)
+	
+Create !buy command to purchase shop items
+	- Create the command base (Complete)
+	- Link command to database (Complete)
+	- Create error handling (Complete)~~
+	
+--------------------------
+Complete by the end of May
+--------------------------
+Extended work on !shop command
+	- Make the set embeds dynamic based on # of items
+		- Remove current embeds
+		- Create loop system to form new embeds
+	- Adjust prices (Incomplete)
+	- Adjust attribute gains (Incomplete)
+	- Add additional items (Incomplete)
+	- Clean up naming (Incomplete)
+	- Create new table for storing master list of items (Incomplete)
+		- Convert current master list to grab from table (Incomplete)
+		
+Recreate and modify !duel command
+	- Create rank system database (Incomplete)
+	- Replace current command structure (Incomplete)
+	- Create new health pool for duels (Incomplete)
+	- Link command to database (Incomplete)
+
+Modify !fight command to keep fighting until current level is complete
+	- Add loop system (Incomplete)
+	- Add checks to keep player from being killed (Incomplete)
+
+Beautify all text
+	- Put most text into embeds (Incomplete)
+	- Work on color scheme (Incomplete)
+	- Work on fonts (Incomplete)
+	
