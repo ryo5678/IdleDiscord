@@ -1,3 +1,17 @@
+Changelog for version 0.5
+- Modify shop view to only show non-purchased items
+	- Create database of purchase history 
+	- Create arrays to support all shop items
+	- Modify shop to use the arrays to show items
+	- Modify arrays to grab data from database
+	- Modify shop view to display purchase history
+	- Modify shop item descriptions to grab from database	
+- Create !buy command to purchase shop items
+	- Create the command base 
+	- Link command to database
+	- Create error handling
+- Minor improvements to other commands
+
 Changelog for version 0.4
 - Updated shutdown permissions
 - Bot now recovers automatically after crash or shutdown
